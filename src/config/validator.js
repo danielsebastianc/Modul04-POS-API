@@ -7,8 +7,6 @@ module.exports = {
       if (req.path == "/regis") {
         await check("firstName").notEmpty().isAlpha().run(req);
         await check("lastName").notEmpty().isAlpha().run(req);
-        await check("phone").notEmpty().isAlphanumeric().run(req);
-        await check("address").notEmpty().isAlphanumeric().run(req);
       }
       await check("email").notEmpty().isEmail().run(req);
       await check("password")

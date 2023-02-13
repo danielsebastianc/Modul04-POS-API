@@ -15,7 +15,6 @@ module.exports = {
   readToken: (req, res, next) => {
     // pengecekan tokennya dulu baru ke keeplogin
     jwt.verify(req.token, process.env.TOKEN_KEY, (err, decrypt) => {
-      console.log(req);
       if (err) {
         console.log(err);
         return res.status(401).send({
@@ -23,7 +22,7 @@ module.exports = {
           message: "Token Authentication Failed",
         });
       }
-      console.log(decrypt);
+      console.log("TOKEN DECRYPTION:", decrypt);
       req.decrypt = decrypt; // menampung data hasil terjemahan token
       next();
     });

@@ -23,7 +23,7 @@ const UsersModel = dbSeq.define(
     phone: {
       type: DataTypes.STRING,
     },
-    address: {
+    location: {
       type: DataTypes.STRING,
     },
     password: {
