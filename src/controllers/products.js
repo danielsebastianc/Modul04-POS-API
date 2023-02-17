@@ -5,32 +5,55 @@ module.exports = {
   paginate: async (req, res) => {
     try {
       const page = parseInt(req.query.page) || 0;
-      const limit = parseInt(req.query.limit) || 10;
-      const search = req.query.search || "";
+      const limit = parseInt(req.query.limit) || 5;
       const offset = limit * page;
-      const totalRows = await ProductsModel.count({
-        where: {
+
+      const { name, category, sortby } = req.query;
+      const order = req.query.order || "asc";
+      const filterData = [];
+      const sortData = [];
+
+      if (name) {
+        filterData.push({
           name: {
-            [Op.like]: "%" + search + "%",
+            [Op.like]: "%" + name + "%",
           },
+        });
+      }
+      if (category) {
+        filterData.push({
+          idcategories: category,
+        });
+      }
+
+      if (sortby) {
+        sortData.push([sortby, order]);
+      } else {
+        sortData.push(["idproducts", "DESC"]);
+      }
+
+      const data = await ProductsModel.findAndCountAll({
+        include: {
+          model: CategoriesModel,
+          as: "category",
+          required: true,
+          attributes: ["idcategories", "name"],
         },
-      });
-      const totalPage = Math.ceil(totalRows / limit);
-      const result = await ProductsModel.findAll({
         where: {
-          name: {
-            [Op.like]: "%" + search + "%",
-          },
+          [Op.and]: filterData,
         },
         offset: offset,
         limit: limit,
-        order: ["id", "DESC"],
+        order: sortData,
       });
+
+      const totalPage = Math.ceil(data.count / limit);
+
       return res.status(200).send({
-        result,
+        data: data.rows,
         page,
         limit,
-        totalRows,
+        totalRows: data.count,
         totalPage,
       });
     } catch (error) {
@@ -39,7 +62,7 @@ module.exports = {
   },
   getData: async (req, res) => {
     try {
-      const { name, category, sortby, price } = req.query;
+      const { name, category, sortby } = req.query;
       const order = req.query.order || "asc";
       const filterData = [];
       const sortData = [];
@@ -54,8 +77,6 @@ module.exports = {
         filterData.push({
           idcategories: category,
         });
-      }
-      if (price) {
       }
 
       if (sortby) {

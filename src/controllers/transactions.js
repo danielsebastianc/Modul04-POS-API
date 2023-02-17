@@ -1,4 +1,4 @@
-const { Sequelize } = require("sequelize");
+const { Op } = require("sequelize");
 const {
   TransactionModel,
   UsersModel,
@@ -7,6 +7,36 @@ const {
 } = require("../models");
 
 module.exports = {
+  pagination: async (req, res) => {
+    const page = parseInt(req.query.page) || 0;
+    const limit = parseInt(req.query.limit) || 5;
+    const orderId = req.query.orderId || "";
+    const offset = limit * page;
+    const data = await TransactionModel.findAndCountAll({
+      include: {
+        model: UsersModel,
+        as: "user",
+        required: true,
+        attributes: ["firstName", "lastName"],
+      },
+      where: {
+        [Op.and]: {
+          orderId: { [Op.like]: "%" + orderId + "%" },
+        },
+      },
+      offset: offset,
+      limit: limit,
+      order: [["idtransactions", "DESC"]],
+    });
+    const totalPage = Math.ceil(data.count / limit);
+    return res.status(200).send({
+      data: data.rows,
+      page: page,
+      limit: limit,
+      totalRows: data.count,
+      totalPage: totalPage,
+    });
+  },
   getData: async (req, res) => {
     try {
       if (req.query.sortby) {

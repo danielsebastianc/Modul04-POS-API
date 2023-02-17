@@ -8,56 +8,69 @@ module.exports = {
     try {
       const page = parseInt(req.query.page) || 0;
       const limit = parseInt(req.query.limit) || 10;
-      const search = req.query.search || "";
       const offset = limit * page;
-      const totalRows = await UsersModel.count({
-        where: {
+
+      const { name, location, sortby } = req.query;
+      const order = req.query.order || "asc";
+      const filterData = [{ role: "cashier" }];
+      const sortData = [];
+
+      if (name) {
+        filterData.push({
           [Op.or]: [
             {
               firstName: {
-                [Op.like]: "%" + search + "%",
+                [Op.like]: "%" + name + "%",
               },
             },
             {
               lastName: {
-                [Op.like]: "%" + search + "%",
+                [Op.like]: "%" + name + "%",
               },
             },
           ],
+        });
+      }
+      if (location) {
+        filterData.push({
+          location: {
+            [Op.like]: "%" + location + "%",
+          },
+        });
+      }
+
+      if (sortby) {
+        sortData.push([sortby, order]);
+      } else {
+        sortData.push(["idusers", "DESC"]);
+      }
+
+      const data = await UsersModel.findAndCountAll({
+        attributes: {
+          exclude: ["password", "role"],
         },
-      });
-      const totalPage = Math.ceil(totalRows / limit);
-      const result = await UsersModel.findAll({
         where: {
-          [Op.and]: [
-            { role: "cashier" },
-            {
-              [Op.or]: [
-                {
-                  firstName: {
-                    [Op.like]: "%" + search + "%",
-                  },
-                },
-                {
-                  lastName: {
-                    [Op.like]: "%" + search + "%",
-                  },
-                },
-              ],
-            },
-          ],
+          [Op.and]: filterData,
         },
+        order: sortData,
         offset: offset,
         limit: limit,
-        order: [["idusers", "DESC"]],
       });
-      return res.status(200).send({
-        result,
-        page,
-        limit,
-        totalRows,
-        totalPage,
-      });
+      const totalPage = Math.ceil(data.count / limit);
+      if (data.count > 0) {
+        return res.status(200).send({
+          data: data.rows,
+          page,
+          limit,
+          totalRows: data.count,
+          totalPage,
+        });
+      } else {
+        return res.status(404).send({
+          message: `Data Not Found`,
+          data: [],
+        });
+      }
     } catch (error) {
       console.log(error);
     }
@@ -67,7 +80,7 @@ module.exports = {
       const { name, location, sortby } = req.query;
       const order = req.query.order || "asc";
       const filterData = [{ role: "cashier" }];
-      const sortData = [];
+      const sortData = [["idusers", "DESC"]];
       if (name) {
         filterData.push({
           [Op.or]: [
